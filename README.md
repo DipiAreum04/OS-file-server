@@ -46,6 +46,22 @@ FileClient/
 | `LIST` | Lists all files on the server |
 | `QUIT` | Closes the client connection |
 
+## Synchronization & Deadlock Prevention
+ 
+The filesystem is a shared resource accessed by many virtual threads simultaneously, making race conditions a real concern. For example, without synchronization, two clients could call `createFile` at the same time, both find the same free FEntry slot, and both write to it — resulting in a corrupted directory. Similarly, a client reading a file mid-write could observe a half-updated block chain.
+ 
+To prevent this, all filesystem operations are protected by a single `ReentrantReadWriteLock`:
+ 
+- **Read lock** — acquired by `readFile` and `listFiles`. Multiple threads can hold the read lock simultaneously, enabling true read concurrency.
+- **Write lock** — acquired by `createFile`, `writeFile`, and `deleteFile`. The write lock is exclusive: no other reader or writer can proceed until it is released.
+This satisfies the requirement that concurrent reads are allowed, but a write blocks all other access.
+ 
+**Starvation prevention** — The lock is initialized with `new ReentrantReadWriteLock(true)`, enabling fair mode. In fair mode, threads are granted the lock in approximately arrival order. Without this, a continuous stream of readers could indefinitely delay a waiting writer (reader starvation of writers), or vice versa.
+ 
+**Deadlock prevention** — Every lock acquisition is paired with an unconditional `unlock()` in a `finally` block. This ensures the lock is always released even if an exception is thrown mid-operation, preventing the filesystem from becoming permanently locked and deadlocking all clients.
+ 
+**Atomic write design** — `writeFile` avoids partial-write corruption by allocating and fully writing a new block chain *before* updating the FEntry pointer to point to it. The old chain is freed only after the FEntry is updated. This means a reader always sees either the complete old file or the complete new file — never an intermediate state.
+
 ## Build & Run
 
 Requires Java 21+ and Maven.
