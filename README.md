@@ -64,27 +64,32 @@ This satisfies the requirement that concurrent reads are allowed, but a write bl
 
 ## Build & Run
 
-Requires Java 21+ and Maven.
-
+Requires Java 21+ and Maven. Both modules have the `exec-maven-plugin` configured in their `pom.xml`.
+ 
 **Server:**
 ```bash
 cd FileServer
-mvn compile
-java -cp target/classes ca.concordia.Main <port> <filesystem_name> <total_size_bytes>
+mvn compile exec:java -Dexec.args="<port> <filesystem_name> <total_size_bytes>"
 # Example:
-java -cp target/classes ca.concordia.Main 8080 myfs 1048576
+mvn compile exec:java -Dexec.args="8080 myfs 1048576"
 ```
-
+ 
 **Client:**
 ```bash
 cd FileClient
-mvn compile
-java -cp target/classes ca.concordia.Main <host> <port>
+mvn compile exec:java -Dexec.args="<host> <port>"
 # Example:
-java -cp target/classes ca.concordia.Main localhost 8080
+mvn compile exec:java -Dexec.args="localhost 8080"
 ```
 
 ## Authors
 
 - Dipita Sinha (40273009)
 - Arnav Singh Ahlawat (40258921)
+Concordia University — Gina Cody School of Engineering and Computer Science  
+COEN 346 - Operating Systems
+
+## License
+
+Developed for academic purposes. Not licensed for commercial use.
+
